@@ -15,4 +15,6 @@ We preserve the distinction between **reported bugs**, **independently reproduce
 
 - [005 — DuckDB #19491: binary64 round-to-even precision](cases/005-duckdb-round-even/README.md) — 713 differences in a 1,506-case stress sample; exact-rational prototype matched 4,977 Python oracle comparisons; C++ port untested.
 
+- [006 — Mem0 #7535: memory supersession and ranking](cases/006-mem0-memory-supersession/README.md) — native ranker checked; 4 synthetic scenarios compare recency, relevance and explicit supersession.
+
 Original projects and maintainers retain ownership of their code. Work here is independent unless an upstream pull request is explicitly submitted.
