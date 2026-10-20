@@ -1,0 +1,119 @@
+--- a/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/mod.rs
++++ b/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/mod.rs
+@@ -373,6 +373,18 @@
+ }
+ 
+-/// Check if the current statement is nested within another [`StmtClassDef`] or [`StmtFunctionDef`].
++/// Avoid emitting a PEP 695 autofix if TypeVar carries unknown keyword unpacking.
++fn has_unpacked_type_var_keywords(semantic: &SemanticModel, name: &str) -> bool {
++    semantic
++        .lookup_symbol(name)
++        .binding_id()
++        .and_then(|binding_id| semantic.binding(binding_id).source)
++        .map(|node_id| semantic.statement(node_id))
++        .and_then(Stmt::as_assign_stmt)
++        .and_then(|stmt| stmt.value.as_call_expr())
++        .is_some_and(|call| call.arguments.keywords.iter().any(|keyword| keyword.arg.is_none()))
++}
++
++/// Check if the current statement is nested within another [`StmtClassDef`] or [`StmtFunctionDef`].
+ fn in_nested_context(checker: &Checker) -> bool {
+     checker
+         .semantic()
+--- a/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/non_pep695_type_alias.rs
++++ b/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/non_pep695_type_alias.rs
+@@ -16,7 +16,7 @@
+ 
+ use super::{
+     DisplayTypeVars, TypeParamKind, TypeVar, TypeVarReferenceVisitor, expr_name_to_type_var,
+-    non_default_follows_default,
++    non_default_follows_default, has_unpacked_type_var_keywords,
+ };
+ 
+ /// ## What it does
+@@ -301,13 +301,14 @@
+     );
+     let edit = Edit::range_replacement(content, stmt.range());
+ 
+-    checker
+-        .report_diagnostic(
+-            NonPEP695TypeAlias {
+-                name: name.to_string(),
+-                type_alias_kind,
+-            },
+-            stmt.range(),
+-        )
+-        .set_fix(Fix::unsafe_edit(edit));
++    let mut diagnostic = checker.report_diagnostic(
++        NonPEP695TypeAlias {
++            name: name.to_string(),
++            type_alias_kind,
++        },
++        stmt.range(),
++    );
++    if !type_vars.iter().any(|var| has_unpacked_type_var_keywords(checker.semantic(), var.name)) {
++        diagnostic.set_fix(Fix::unsafe_edit(edit));
++    }
+ }
+--- a/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/non_pep695_generic_class.rs
++++ b/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/non_pep695_generic_class.rs
+@@ -10,7 +10,8 @@
+ use ruff_python_ast::PythonVersion;
+ 
+ use super::{
+-    DisplayTypeVars, TypeVarReferenceVisitor, check_type_vars, find_generic, in_nested_context,
++    DisplayTypeVars, TypeVarReferenceVisitor, check_type_vars, find_generic,
++    has_unpacked_type_var_keywords, in_nested_context,
+ };
+ 
+ /// ## What it does
+@@ -238,6 +239,10 @@
+             return;
+         };
+ 
++        if type_vars.iter().any(|var| has_unpacked_type_var_keywords(checker.semantic(), var.name)) {
++            return; // Diagnostic remains available.
++        }
++
+         // build the fix as a String to avoid removing comments from the entire function body
+         let type_params = DisplayTypeVars {
+             type_vars: &type_vars,
+--- a/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/non_pep695_generic_function.rs
++++ b/crates/ruff_linter/src/rules/pyupgrade/rules/pep695/non_pep695_generic_function.rs
+@@ -10,7 +10,10 @@
+ use crate::{Edit, Fix, FixAvailability, Violation};
+ use ruff_python_ast::PythonVersion;
+ 
+-use super::{DisplayTypeVars, TypeVarReferenceVisitor, check_type_vars, in_nested_context};
++use super::{
++    DisplayTypeVars, TypeVarReferenceVisitor, check_type_vars, has_unpacked_type_var_keywords,
++    in_nested_context,
++};
+ 
+ /// ## What it does
+ ///
+@@ -176,15 +179,16 @@
+         source: checker.source(),
+     };
+ 
+-    checker
+-        .report_diagnostic(
+-            NonPEP695GenericFunction {
+-                name: name.to_string(),
+-            },
+-            TextRange::new(name.start(), parameters.end()),
+-        )
+-        .set_fix(Fix::unsafe_edit(Edit::insertion(
++    let mut diagnostic = checker.report_diagnostic(
++        NonPEP695GenericFunction {
++            name: name.to_string(),
++        },
++        TextRange::new(name.start(), parameters.end()),
++    );
++    if !type_vars.iter().any(|var| has_unpacked_type_var_keywords(checker.semantic(), var.name)) {
++        diagnostic.set_fix(Fix::unsafe_edit(Edit::insertion(
+             type_params.to_string(),
+             name.end(),
+         )));
++    }
+ }
