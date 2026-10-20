@@ -13,4 +13,6 @@ We preserve the distinction between **reported bugs**, **independently reproduce
 
 - [004 — DuckDB #26507: optimizer cast rewrite audit](cases/004-duckdb-cast-rewrite/README.md) — upstream fix already merged; 7/7 optimized-vs-unoptimized SQL checks pass on DuckDB v1.5.6.
 
+- [005 — DuckDB #19491: binary64 round-to-even precision](cases/005-duckdb-round-even/README.md) — 713 differences in a 1,506-case stress sample; exact-rational prototype matched 4,977 Python oracle comparisons; C++ port untested.
+
 Original projects and maintainers retain ownership of their code. Work here is independent unless an upstream pull request is explicitly submitted.
