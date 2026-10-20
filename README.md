@@ -9,4 +9,6 @@ We preserve the distinction between **reported bugs**, **independently reproduce
 - [001 — Ruff FURB103: unsafe autofix for nested `write()`](cases/001-ruff-furb103/README.md) — reproduced; patch proposed; Rust build and regression tests pending.
 - [002 — fast-check #6532: non-canonical NaN bit patterns](cases/002-fast-check-noncanonical-nan/README.md) — independently investigated and reproduced; raw-bit workaround and seed/path counterexample archived; no upstream fix.
 
+- [003 — Ruff UP040/UP046/UP047: TypeVar keyword unpacking lost during autofix](cases/003-ruff-typevar-unpacking/README.md) — reproduced and extended to unpacked bounds; experimental guard patch prepared; Rust build/tests pending.
+
 Original projects and maintainers retain ownership of their code. Work here is independent unless an upstream pull request is explicitly submitted.
