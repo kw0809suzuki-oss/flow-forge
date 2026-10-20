@@ -1,0 +1,26 @@
+diff --git a/crates/ruff_linter/src/rules/refurb/rules/write_whole_file.rs b/crates/ruff_linter/src/rules/refurb/rules/write_whole_file.rs
+--- a/crates/ruff_linter/src/rules/refurb/rules/write_whole_file.rs
++++ b/crates/ruff_linter/src/rules/refurb/rules/write_whole_file.rs
+@@ -141,6 +141,6 @@ impl<'a> Visitor<'a> for WriteMatcher<'a, '_> {
+ 
+                     if let Some(fix) =
+-                        generate_fix(self.checker, &open, self.with_stmt, &suggestion)
++                        generate_fix(self.checker, &open, self.with_stmt, &suggestion, expr)
+                     {
+                         diagnostic.set_fix(fix);
+                     }
+@@ -206,7 +206,13 @@ fn generate_fix(
+     open: &FileOpen,
+     with_stmt: &ast::StmtWith,
+     suggestion: &str,
++    write_expr: &Expr,
+ ) -> Option<Fix> {
+-    if !(with_stmt.items.len() == 1 && matches!(with_stmt.body.as_slice(), [Stmt::Expr(_)])) {
++    // Replacing the whole `with` statement is only valid if the write call
++    // constitutes the entire body expression. A nested call can be conditional
++    // or participate in another expression whose effects must be preserved.
++    if with_stmt.items.len() != 1
++        || !matches!(with_stmt.body.as_slice(), [Stmt::Expr(stmt)] if stmt.value.range() == write_expr.range())
++    {
+         return None;
+     }
