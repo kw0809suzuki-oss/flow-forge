@@ -11,4 +11,6 @@ We preserve the distinction between **reported bugs**, **independently reproduce
 
 - [003 — Ruff UP040/UP046/UP047: TypeVar keyword unpacking lost during autofix](cases/003-ruff-typevar-unpacking/README.md) — reproduced and extended to unpacked bounds; experimental guard patch prepared; Rust build/tests pending.
 
+- [004 — DuckDB #26507: optimizer cast rewrite audit](cases/004-duckdb-cast-rewrite/README.md) — upstream fix already merged; 7/7 optimized-vs-unoptimized SQL checks pass on DuckDB v1.5.6.
+
 Original projects and maintainers retain ownership of their code. Work here is independent unless an upstream pull request is explicitly submitted.
